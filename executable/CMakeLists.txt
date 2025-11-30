@@ -1,0 +1,17 @@
+set (TXT2BIN_SRC
+        txt2bin.cpp)
+add_executable(txt2bin.out ${TXT2BIN_SRC})
+target_link_libraries(txt2bin.out relation)
+
+add_executable(diamond.out diamond.cpp)
+target_link_libraries(diamond.out matching)
+add_executable(four_square.out four_square.cpp)
+target_link_libraries(four_square.out matching)
+add_executable(house.out house.cpp)
+target_link_libraries(house.out matching)
+add_executable(triple_triangle.out triple_triangle.cpp)
+target_link_libraries(triple_triangle.out matching)
+add_executable(near_five_clique.out near_five_clique.cpp)
+target_link_libraries(near_five_clique.out matching)
+add_executable(quad_triangle.out quad_triangle.cpp)
+target_link_libraries(quad_triangle.out matching)
