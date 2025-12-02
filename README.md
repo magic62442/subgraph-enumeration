@@ -48,30 +48,16 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j
 ```
 
-## Input Format
+## Input format
 
-We support the same format as [RapidMatch](https://github.com/RapidsAtHKUST/RapidMatch). Both query and data graphs are vertex-labeled and follow this format:
-
-- Graph starts with `t N M` where N = number of vertices, M = number of edges
-- Vertex format: `v VertexID LabelId Degree`
-- Edge format: `e VertexId1 VertexId2`
-- Vertex IDs start from 0 and range [0, N-1]
+The pattern graph and data graph should start with 'n, m' where n is the number of nodes and m is the number of undirected edges, followed by the edge list. The node id should be consecutive and should start from 0. Each edge only appears once, in the format of 'smaller_vertex_id larger_vertex_id'. The separator is a ' '.
 
 Example:
 
 ```
-t 5 6
-v 0 0 2
-v 1 1 3
-v 2 2 3
-v 3 1 2
-v 4 2 2
-e 0 1
-e 0 2
-e 1 2
-e 1 3
-e 2 4
-e 3 4
+3 2
+0 1
+1 2
 ```
 
 ## Execution and Output
