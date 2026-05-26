@@ -8,7 +8,6 @@
 #include "config.h"
 #include "utils.h"
 #include "clique.h"
-#include "glpk.h"
 extern "C" {
     #include "automorphism/nauty.h"
     #include "automorphism/gtools.h"
@@ -23,7 +22,6 @@ extern "C" {
 #include <cmath>
 #include <algorithm>
 #include <cassert>
-#include <dirent.h>
 #include <functional>
 
 class Graph {
@@ -78,6 +76,16 @@ public:
         return _edgeWeight[e];
     }
 
+    void setVertexWeight(VertexID u, ui weight) {
+        _nodeWeight[u] = weight;
+    }
+
+    void setEdgeWeight(EdgeID e, ui weight) {
+        _edgeWeight[e] = weight;
+    }
+
+    void initWeights();
+
     int getEdgeID(VertexID v, VertexID w) const;
     int getUndirectedEID(VertexID v, VertexID w) const;
     void addDirectedEdges(const Edge *edgeList, ui num);
@@ -131,13 +139,7 @@ public:
 class PatternGraph : public Graph {
 private:
     bool **_adjMatrix;
-    VertexID *_aggreV;              // aggregation vertices / edges. Note that for shrinkage patterns,
-                                    // there could be multiple orbits that needs to be aggregated.
-    int *_aggreWeight;              // the weight for each aggregation vertex, 1 by default.
-                                    // vertices in the same orbit always has the same weight.
-    ui _aggreSize;
     int _orbitType;                 // 0: global counting. 1: vertex orbit. 2: edge orbit
-    bool _eOrbitDir;                // used for edge orbit. true: directed edge orbit false: undirected
     VertexID *_coreV;               // vertices with core number \geq 2
     VertexID *_peripheralV;         // other vertices
     ui _coreSize;
@@ -163,47 +165,13 @@ public:
         return _adjMatrix[u1][u2];
     }
 
-    // remark. only call this in genDAGs.
-    inline void setAggreInfo(VertexID *aggreV, ui aggreSize, int orbitType) {
-        _aggreSize = aggreSize;
-        _orbitType = orbitType;
-        if (orbitType == 0) return;
-        _aggreV = new VertexID[aggreSize];
-        memcpy(_aggreV, aggreV, sizeof(VertexID) * aggreSize);
-        _aggreWeight = new int[aggreSize];
-        for (int i = 0; i < aggreSize; ++i)
-            _aggreWeight[i] = 1;
-    }
-
-    void setCorePeripheral(VertexID *coreV, VertexID *peripheralV, ui coreSize) {
-        _coreSize = coreSize;
-        _coreV = new VertexID[coreSize];
-        memcpy(_coreV, coreV, sizeof(VertexID) * coreSize);
-        ui peripheralSize = _numVertices - coreSize;
-        _peripheralV = new VertexID[peripheralSize];
-        memcpy(_peripheralV, peripheralV, sizeof(VertexID) * peripheralSize);
-    }
-
-    inline VertexID *getPeripheralV() const {
-        return _peripheralV;
-    }
-
     inline VertexID *getCoreV(ui &coreSize) const {
         coreSize = _coreSize;
         return _coreV;
     }
 
-    inline VertexID *getAggreV(ui &aggreSize) const {
-        aggreSize = _aggreSize;
-        return _aggreV;
-    }
-
-    inline ui getAggreSize() const {
-        return _aggreSize;
-    }
-
-    inline int *getAggreWeight() const {
-        return _aggreWeight;
+    inline VertexID *getPeripheralV() const {
+        return _peripheralV;
     }
 
     inline VertexID *getV2L() const {
@@ -230,125 +198,20 @@ public:
         return _canonValue;
     }
 
-    inline bool isSingleAggre() const {
-        if (_orbitType == 1)
-            return _aggreSize == 1;
-        else
-            return _aggreSize == 2;
-    }
-
-    bool isEOrbitDir() const {
-        return _eOrbitDir;
-    }
-
     const std::vector<std::vector<std::vector<VertexID>>> &getCandidateRules() const {
         return _candidateRules;
     }
-
-    friend class Tree;
-    friend class ConNode;
 
     void loadPatternGraph(const std::string &file);
     void addEdgeList(const Edge *edgeList, ui num);
     void computeAutoGroup();
     void computeCandidateRules();
-    void setSingleAggre();
-    void setMultiAggre();
-    void genDAGs(std::vector<PatternGraph> &din, std::vector<PatternGraph> &dout) const;
     void buildCorePeripheral();
     Edge *coreUndirectedEdges(ui &num) const;
-    PatternGraph shrink(VertexID u, VertexID v) const;
     void printGraph(bool direction = true) const;
     bool isClique() const;
-    VertexID *getMultiAggreV(ui &aggreSize) const;
-    void buildFHD(FHD &fhd) const;
 };
 
-typedef struct Pattern {
-    PatternGraph u;
-    PatternGraph in;
-    PatternGraph out;
-
-    explicit Pattern(const PatternGraph &u) : u(u)  {
-        in = PatternGraph();
-        out = PatternGraph();
-    }
-
-    Pattern() = default;
-
-    virtual ~Pattern() = default;
-
-    Pattern(const PatternGraph &u, const PatternGraph &in, const PatternGraph &out) : u(u), in(in), out(out) {}
-
-    Pattern &operator=(const Pattern &rhs) {
-        if (this == &rhs)
-            return *this;
-        u = rhs.u;
-        in = rhs.in;
-        out = rhs.out;
-        return *this;
-    }
-
-    inline bool useDAG() const {
-        return in.getNumVertices() != 0;
-    }
-
-    inline bool empty() const {
-        return u.getNumVertices() == 0;
-    }
-
-    Pattern shrink(VertexID i, VertexID j, std::vector<VertexID> &old2New) const;
-    Pattern shrink(const std::vector<VertexID> &partition) const;
-    void setSingleAggre();
-    void setMultiAggre();
-}Pattern;
-
-// adapted from utility/automorphism/directg.c
-#define MAXNV 128
-#define MAXMV SETWORDSNEEDED(MAXNV)
-#define MAXNE 1024
-static int _v0[MAXNE],_v1[MAXNE];
-static int edgeno[MAXNV][MAXNV];
-
-#define MAXME SETWORDSNEEDED(2*MAXNE)
-
-static set x[MAXME];
-static int ix[2*MAXNE],nix;
-static boolean first;
-static int me;
-static int lastreject[MAXNV];
-static boolean lastrejok;
-static int rejectlevel;
-static unsigned long groupsize;
-static unsigned long newgroupsize;
-static boolean Gswitch,Vswitch,ntgroup,ntisol;
-
-static int splitlevel,splitmod,splitres,splitcount;
-static unsigned long splitcases;
-static boolean ismax(int *p, int n);
-static void testmax(int *p, int n, int *abort);
-static int trythisone(grouprec *group, int ne, int m, int n, std::vector<PatternGraph> &pin, std::vector<PatternGraph> &pout);
-static void updatetc(graph *oldtc, graph *newtc, int v, int w, int m, int n);
-static void updatetc1(graph *oldtc, graph *newtc, int v, int w, int n);
-static int scan_acyclic(int level, int ne, int minarcs, int maxarcs, int sofar,
-                        graph *oldtc, grouprec *group, int m, int n, std::vector<PatternGraph> &pin, std::vector<PatternGraph> &pout);
-static int scan_acyclic1(int level, int ne, int minarcs, int maxarcs, int sofar,
-                         graph *oldtc, grouprec *group, int m, int n, std::vector<PatternGraph> &pin, std::vector<PatternGraph> &pout);
-static int scan(int level, int ne, int minarcs, int maxarcs, int sofar,
-                boolean oriented, grouprec *group, int m, int n, std::vector<PatternGraph> &pin, std::vector<PatternGraph> &pout);
-static void direct(graph *g, int nfixed, long minarcs, long maxarcs, int m, int n, std::vector<PatternGraph> &pin, std::vector<PatternGraph> &pout);
-DataGraph constructDirectedDataGraph(const DataGraph &g, bool outDag);
-std::vector<PatternGraph> loadPatternGraph(const std::string &path, bool batchQuery, std::vector<std::string> &files);
-bool checkMapping(const PatternGraph &p1, const PatternGraph &p2, const std::vector<VertexID> &v2, VertexID *mapping);
-bool checkMapping(const PatternGraph &p1, const PatternGraph &p2, const std::vector<VertexID> &v1, const std::vector<VertexID> &v2);
-bool checkMapping(const Pattern &p1, const Pattern &p2, const std::vector<VertexID> &v2, VertexID *mapping);
-bool checkMapping(const Pattern &p1, const Pattern &p2, const std::vector<VertexID> &v1, const std::vector<VertexID> &v2);
 CanonType subgraphCanonValue(const PatternGraph &p, const std::vector<VertexID> &v, int *v2o = nullptr);
-bool isSubgraphAutoGroup(const PatternGraph &p, const std::vector<VertexID> &v, const std::vector<VertexID> &group);
-EdgeID *buildInID2OutID(const DataGraph &din, const DataGraph &dout);
-EdgeID *buildUnID2OutID(const DataGraph &dun, const DataGraph &dout);
-EdgeID *buildReverseUnID(const DataGraph &dun);
-int numDAG(const PatternGraph &p, const std::vector<VertexID> &v);
-bool isConnectedSubgraph(std::vector<VertexID> vertices, const PatternGraph &p);
 
 #endif //SCOPE_GRAPH_H

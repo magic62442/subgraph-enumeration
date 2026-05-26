@@ -18,14 +18,10 @@ void singleThreadMatch(int argc, char **argv) {
     bool intersectType = !cmd.getIntersectType();
     PatternGraph patternGraph;
     DataGraph dataGraph;
-    patternGraph.loadPatternGraph(queryGraphPath);
     std::vector<std::vector<VertexID>> result;
-    LabeledGraph q, g;
     patternGraph.loadPatternGraph(queryGraphPath);
     dataGraph.loadDataGraph(dataGraphPath);
-    q.loadFromGraph(patternGraph);
-    g.loadFromGraph(dataGraph);
-    CandidateSpace cs(q, g, false);
+    CandidateSpace cs(patternGraph, dataGraph);
     std::ofstream outFile;
     std::ostream &outStream = resultPath.empty() ? std::cout : outFile ;
     if (!resultPath.empty()) outFile.open(resultPath);
@@ -35,22 +31,22 @@ void singleThreadMatch(int argc, char **argv) {
     if (!cs.buildCandCFL()) {
         return;
     }
-    cs.setQueryGraphWeights(q);
-    bool *visited = new bool[g.getNumVertices()];
-    memset(visited, false, sizeof(bool) * g.getNumVertices());
-    VertexID *partMatch = new VertexID[q.getNumVertices()];
-    VertexID **candidates = new VertexID * [q.getNumVertices()];
-    VertexID **totalCandidates = new VertexID * [q.getNumVertices()];
+    cs.setQueryGraphWeights(patternGraph);
+    bool *visited = new bool[dataGraph.getNumVertices()];
+    memset(visited, false, sizeof(bool) * dataGraph.getNumVertices());
+    VertexID *partMatch = new VertexID[patternGraph.getNumVertices()];
+    VertexID **candidates = new VertexID * [patternGraph.getNumVertices()];
+    VertexID **totalCandidates = new VertexID * [patternGraph.getNumVertices()];
     ui maxSize = cs.getMaxSize();
-    for (int i = 0; i < q.getNumVertices(); ++i) {
+    for (int i = 0; i < patternGraph.getNumVertices(); ++i) {
         candidates[i] = new VertexID[maxSize];
         totalCandidates[i] = new VertexID[maxSize];
     }
-    ui *candCount = new ui[q.getNumVertices()];
-    ui *totalCandCount = new ui[q.getNumVertices()];
-    memset(candCount, 0, sizeof(ui) * q.getNumVertices());
-    memset(totalCandCount, 0, sizeof(ui) * q.getNumVertices());
-    std::vector<ui> poses(q.getNumVertices(), 0);
+    ui *candCount = new ui[patternGraph.getNumVertices()];
+    ui *totalCandCount = new ui[patternGraph.getNumVertices()];
+    memset(candCount, 0, sizeof(ui) * patternGraph.getNumVertices());
+    memset(totalCandCount, 0, sizeof(ui) * patternGraph.getNumVertices());
+    std::vector<ui> poses(patternGraph.getNumVertices(), 0);
     std::vector<VertexID> tmpCand(maxSize);
     size_t count = 0;
     bool traverse = false;
@@ -61,12 +57,12 @@ void singleThreadMatch(int argc, char **argv) {
     HyperTree t;
     PrefixNode *pt;
     double intersectCost = 0.0, materializeCost = 0.0;
-    optCostPlan(patternGraph, g, cs, visited, partMatch, candidates, candCount, totalCandidates, totalCandCount,
+    optCostPlan(patternGraph, dataGraph, cs, visited, partMatch, candidates, candCount, totalCandidates, totalCandCount,
                 poses, tmpCand, t, pt);
     t.writeToStream(outStream);
     t.selectSymmetry(patternGraph);
-    t.buildTraverseUnlabeled(q, cs, iep);
-    refineIntersectionInfo(q, t, pt, intersectType);
+    t.buildTraverseUnlabeled(patternGraph, cs, iep);
+    refineIntersectionInfo(patternGraph, t, pt, intersectType);
     std::vector<TrieLevel> levels(t.numNodes);
     end = std::chrono::steady_clock::now();
     elapsedSeconds = end - start;
@@ -83,7 +79,7 @@ void singleThreadMatch(int argc, char **argv) {
     std::vector<ui> beginPoses(t.numAttributes, 0);
     std::vector<ui> endPoses(t.numAttributes, 0);
     start = std::chrono::steady_clock::now();
-    sharedJoin(t, pt, q, cs, levels, visited, result, count, beginPoses, endPoses, traverse);
+    sharedJoin(t, pt, patternGraph, cs, levels, visited, result, count, beginPoses, endPoses, traverse);
     end = std::chrono::steady_clock::now();
     elapsedSeconds = end - start;
     count /= t.divideFactor;
@@ -95,19 +91,8 @@ void singleThreadMatch(int argc, char **argv) {
 #endif
     if (gNumResult == 0) gNumResult = count;
     outStream << "Number of matches: " << gNumResult << std::endl;
-    #ifdef PROFILE_PARALLEL
-    outStream << "Par region enter: " << gParRegionEnter << std::endl;
-    outStream << "Par thread enter: " << gParThreadEnter << std::endl;
-    outStream << "OMP for regions: " << gOmpForRegions << std::endl;
-    outStream << "OMP for iterations: " << gOmpForIters << std::endl;
-    outStream << "subtreeSharedJoin calls: " << gSubtreeJoinCalls << std::endl;
-    outStream << "subtreeSharedJoin time (s): " << gSubtreeJoinTime << std::endl;
-    #endif
     outStream << "Number of intersections: " << gNumInterSection << std::endl;
     outStream << "Execution Time: " << elapsedSeconds.count() << std::endl;
-#ifdef COLLET_GLOBAL_TIME
-    outStream << "global join time: " << gTraverseTime << std::endl;
-#endif
 
 }
 
@@ -127,12 +112,9 @@ void parallelMatch(int argc, char **argv) {
     PatternGraph patternGraph;
     DataGraph dataGraph;
     std::vector<std::vector<VertexID>> result;
-    LabeledGraph q, g;
     patternGraph.loadPatternGraph(queryGraphPath);
     dataGraph.loadDataGraph(dataGraphPath);
-    q.loadFromGraph(patternGraph);
-    g.loadFromGraph(dataGraph);
-    CandidateSpace cs(q, g, false);
+    CandidateSpace cs(patternGraph, dataGraph);
     std::ofstream outFile;
     std::ostream &outStream = resultPath.empty() ? std::cout : outFile ;
     if (!resultPath.empty()) outFile.open(resultPath);
@@ -142,22 +124,22 @@ void parallelMatch(int argc, char **argv) {
     if (!cs.buildCandCFL()) {
         return;
     }
-    cs.setQueryGraphWeights(q);
-    bool *visited = new bool[g.getNumVertices()];
-    memset(visited, false, sizeof(bool) * g.getNumVertices());
-    VertexID *partMatch = new VertexID[q.getNumVertices()];
-    VertexID **candidates = new VertexID * [q.getNumVertices()];
-    VertexID **totalCandidates = new VertexID * [q.getNumVertices()];
+    cs.setQueryGraphWeights(patternGraph);
+    bool *visited = new bool[dataGraph.getNumVertices()];
+    memset(visited, false, sizeof(bool) * dataGraph.getNumVertices());
+    VertexID *partMatch = new VertexID[patternGraph.getNumVertices()];
+    VertexID **candidates = new VertexID * [patternGraph.getNumVertices()];
+    VertexID **totalCandidates = new VertexID * [patternGraph.getNumVertices()];
     ui maxSize = cs.getMaxSize();
-    for (int i = 0; i < q.getNumVertices(); ++i) {
+    for (int i = 0; i < patternGraph.getNumVertices(); ++i) {
         candidates[i] = new VertexID[maxSize];
         totalCandidates[i] = new VertexID[maxSize];
     }
-    ui *candCount = new ui[q.getNumVertices()];
-    ui *totalCandCount = new ui[q.getNumVertices()];
-    memset(candCount, 0, sizeof(ui) * q.getNumVertices());
-    memset(totalCandCount, 0, sizeof(ui) * q.getNumVertices());
-    std::vector<ui> poses(q.getNumVertices(), 0);
+    ui *candCount = new ui[patternGraph.getNumVertices()];
+    ui *totalCandCount = new ui[patternGraph.getNumVertices()];
+    memset(candCount, 0, sizeof(ui) * patternGraph.getNumVertices());
+    memset(totalCandCount, 0, sizeof(ui) * patternGraph.getNumVertices());
+    std::vector<ui> poses(patternGraph.getNumVertices(), 0);
     std::vector<VertexID> tmpCand(maxSize);
     size_t count = 0;
     bool traverse = false;
@@ -168,12 +150,12 @@ void parallelMatch(int argc, char **argv) {
     HyperTree t;
     PrefixNode *pt;
     double intersectCost = 0.0, materializeCost = 0.0;
-    optCostPlan(patternGraph, g, cs, visited, partMatch, candidates, candCount, totalCandidates, totalCandCount,
+    optCostPlan(patternGraph, dataGraph, cs, visited, partMatch, candidates, candCount, totalCandidates, totalCandCount,
                 poses, tmpCand, t, pt);
     t.writeToStream(outStream);
     t.selectSymmetry(patternGraph);
-    t.buildTraverseUnlabeled(q, cs, iep);
-    refineIntersectionInfo(q, t, pt, intersectType);
+    t.buildTraverseUnlabeled(patternGraph, cs, iep);
+    refineIntersectionInfo(patternGraph, t, pt, intersectType);
     std::vector<TrieLevel> levels(t.numNodes);
     end = std::chrono::steady_clock::now();
     elapsedSeconds = end - start;
@@ -189,8 +171,8 @@ void parallelMatch(int argc, char **argv) {
         else levels[i].oneLevel = false;
     }
     start = std::chrono::steady_clock::now();
-    if (intersectType) parSharedJoin(t, pt, q, cs, levels, visited, result, count, traverse);
-    else parSharedJoin(t, pt, q, dataGraph, cs, levels, visited, result, count, traverse);
+    if (intersectType) parSharedJoin(t, pt, patternGraph, cs, levels, visited, result, count, traverse);
+    else parSharedJoin(t, pt, patternGraph, dataGraph, cs, levels, visited, result, count, traverse);
     end = std::chrono::steady_clock::now();
     elapsedSeconds = end - start;
     count /= t.divideFactor;
@@ -202,19 +184,8 @@ void parallelMatch(int argc, char **argv) {
 #endif
     if (gNumResult == 0) gNumResult = count;
     outStream << "Number of matches: " << gNumResult << std::endl;
-    #ifdef PROFILE_PARALLEL
-    outStream << "Par region enter: " << gParRegionEnter << std::endl;
-    outStream << "Par thread enter: " << gParThreadEnter << std::endl;
-    outStream << "OMP for regions: " << gOmpForRegions << std::endl;
-    outStream << "OMP for iterations: " << gOmpForIters << std::endl;
-    outStream << "subtreeSharedJoin calls: " << gSubtreeJoinCalls << std::endl;
-    outStream << "subtreeSharedJoin time (s): " << gSubtreeJoinTime << std::endl;
-    #endif
     outStream << "Execution Time: " << elapsedSeconds.count() << std::endl;
     outStream << "Number of intersections: " << gNumInterSection << std::endl;
-#ifdef COLLET_GLOBAL_TIME
-    outStream << "global join time: " << gTraverseTime << std::endl;
-#endif
 }
 
 int main(int argc, char **argv) {

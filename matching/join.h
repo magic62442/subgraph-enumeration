@@ -63,7 +63,7 @@ void enumerate(std::vector<std::vector<VertexID>> &result, const HyperTree &t, c
 void
 traverse(size_t &count, const Graph &query, const HyperTree &t, const std::vector<VertexID> &order, VertexID *partMatch,
          int mappingSize, const std::vector<TrieLevel *> &levels, std::vector<std::vector<TrieLevel *>> &traversedNodes,
-         std::vector<ui> &poses, std::vector<ui> &numBranches, bool *visited, int extendLevel, bool labeled);
+         std::vector<ui> &poses, std::vector<ui> &numBranches, bool *visited, int extendLevel);
 void
 produceResult(std::vector<std::vector<VertexID>> &result, VertexID *partMatch, ui size);
 void storeMatches(const std::vector<std::vector<VertexID>> &result, std::ofstream &outStream);

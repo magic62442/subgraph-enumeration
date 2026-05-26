@@ -1,5 +1,5 @@
 set(PLAN_SRC
-       decomposition.cpp estimator.cpp optimizer.cpp subset_structure.cpp subset_structure.h
+       decomposition.cpp estimator.cpp optimizer.cpp
         all_td.cpp
         all_td.h)
 

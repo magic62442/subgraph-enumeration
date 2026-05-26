@@ -8,6 +8,9 @@
 #include "decomposition.h"
 #include "../utility/td/td.h"
 #include "../utility/td/SCsolver.h"
+#include <bitset>
+
+using Permutation = std::bitset<165>;
 
 std::vector<HyperNode> getAllNodes(const PatternGraph &p);
 std::vector<HyperNode> getCandidateNodes(const HyperTree &t, const std::vector<HyperNode> &allNodes, const PatternGraph &p);
@@ -23,6 +26,7 @@ std::vector<HyperTree> getMinWidthTrees(const PatternGraph &p);
 std::vector<HyperTree> addNode(HyperNode &tau, const HyperTree &tree, const PatternGraph &p);
 std::vector<HyperNode> getCandidateNodes(const HyperTree &t, const std::vector<HyperNode> &allNodes, const PatternGraph &p);
 static std::map<CanonType, double> canonToFW;
+Permutation encodePermutation(const std::vector<uint32_t>& elements);
 void fractionalWidth(HyperNode &tau, const PatternGraph &p);
 std::vector<VertexID> getUncovered(const HyperTree &t, const PatternGraph &p);
 bool isValid(const HyperTree &t, const PatternGraph &p);

@@ -1,6 +1,5 @@
 set(RELATION_SRC
         candidate_space.cpp
-        labeled_graph.cpp
         relation.cpp
         graph.cpp)
 

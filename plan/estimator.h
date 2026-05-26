@@ -72,16 +72,6 @@ void initPoses(const std::vector<VertexID> &order, const Graph &query, std::vect
 void
 optimizedCartesianProduct(CandidateSpace &cs, VertexID v, const std::vector<VertexID> &path, VertexID *candidate,
                           ui &candCount, VertexID maxCompared, VertexID minCompared, VertexID *partMatch);
-void
-optimizedCartesianProduct(CandidateSpace &cs, VertexID v, const std::vector<VertexID> &path,
-                          TrieNode *edgeColumn, ui &candCount, VertexID maxCompared, VertexID minCompared,
-                          VertexID *partMatch);
-
-void
-cardEstimateLabeled(const std::vector<VertexID> &order, const std::vector<std::vector<VertexID>> &vertexParents,
-                    const std::vector<VertexID> &cartesianParent, CandidateSpace &cs, bool *visited,
-                    VertexID *partMatch, VertexID **candidates, ui *candCount, std::vector<ui> &poses,
-                    std::vector<double> &estimation);
 
 void
 cardEstimateUnlabeled(const std::vector<VertexID> &order, const std::vector<std::vector<VertexID>> &vertexParents,
@@ -111,12 +101,6 @@ generateCandidates(const VertexID **arrays, ui *counts, ui num, std::vector<Vert
                    VertexID *cn, ui &cn_count, VertexID *partMatch, CandidateSpace &cs, VertexID current,
                    const std::vector<VertexID> &largerAttrs, const std::vector<VertexID> &smallerAttrs, VertexID cartesianParent);
 
-void
-cardEstimateLabeled(VertexID u, bool lastLevel, const std::vector<VertexID> &prevOrder, const Graph &query,
-                    CandidateSpace &cs, std::vector<std::vector<VertexID>> &prevMatches,
-                    std::vector<std::vector<VertexID>> &nextMatches, std::vector<double> &weights,
-                    std::vector<double> &nextWeights, double &estimation);
-
 double estimateCartesian(VertexID u1, VertexID u2, CandidateSpace &cs);
 
 std::vector<VertexID> RIOrder(const Graph &query);
@@ -133,17 +117,6 @@ simpleOrder(const Graph &query, const CandidateSpace &cs, const std::vector<Vert
 
 std::vector<ui>
 computeNumBackWard(const Graph &query, const std::vector<VertexID> &prefix, const std::vector<VertexID> &localOrder);
-std::vector<double> computeCost(const std::vector<VertexID> &order, const Graph &query, CandidateSpace &cs,
-                                bool *visited = nullptr, VertexID *partMatch = nullptr, VertexID **candidates = nullptr,
-                                ui *candCount = nullptr);
-double computeCost(const std::vector<VertexID> &order, const std::vector<std::vector<VertexID>> &vertexParents,
-                   const std::vector<VertexID> &cartesianParent, const std::vector<double> &cards, CandidateSpace &cs);
-double computeCost(const std::vector<VertexID> &prefix, const std::vector<VertexID> &order, const Graph &query,
-                   CandidateSpace &cs, bool *visited, VertexID *partMatch, VertexID **candidates, ui *candCount);
-double computeCost(const PrefixNode *pt, const std::vector<std::vector<VertexID>> &localOrders, const Graph &query,
-                   CandidateSpace &cs, bool *visited, VertexID *partMatch, VertexID **candidates, ui *candCount,
-                   const std::vector<std::vector<VertexID>> &matchedAttrs, const std::vector<VertexID> &prevAttrs,
-                   const std::vector<double> &factors);
 ui maxNumBackWard(const std::vector<VertexID> &order, const Graph &query);
 bool saveSubsetToCard(std::ofstream& ofs);
 bool loadSubsetToCard(std::ifstream& ifs);

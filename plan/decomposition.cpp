@@ -2370,7 +2370,7 @@ void buildFromPrefixTree(PrefixNode *prefixTree, const std::vector<std::vector<V
         }
     }
     t.extendLevel = t.nodes[t.numNodes - 1].prefixSize;
-    if (!cs.labeled && t.extendLevel < t.nodes[t.numNodes - 1].numAttributes - 1)
+    if (!false && t.extendLevel < t.nodes[t.numNodes - 1].numAttributes - 1)
         t.extendLevel = t.nodes[t.numNodes - 1].numAttributes - 1;
     t.nIDs = std::vector<std::vector<VertexID>>(t.globalOrder.size());
     for (int j = 0; j < t.globalOrder.size(); ++j) {

@@ -577,7 +577,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
 #ifdef ALL_LEVEL
         if (traversal) enumerate(result, t, t.globalOrder, partMatch, mappingSize, traversedLevels, visited);
 #else
-        traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited, t.extendLevel, cs.labeled);
+        traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited, t.extendLevel);
 #endif
         return;
     }
@@ -654,7 +654,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
         level.values = candidates[pathLength];
         level.length = candCount[pathLength];
         traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                 t.extendLevel, cs.labeled);
+                 t.extendLevel);
         return;
     }
     const std::vector<std::vector<int>> &verticesAfter = globalNode.attributesAfter;
@@ -717,7 +717,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
                     // when a match of shared attributes is found, traverse the remaining attributes
                     traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth + 1, lastLevels, traversedLevels,
                              traversePoses, numBranches, visited,
-                             t.extendLevel, cs.labeled);
+                             t.extendLevel);
                 }
 #endif
                 for (int i = 0; i < nIDs[mappingSize + depth].size(); ++i) {
@@ -784,7 +784,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
                     level.values = candidates[pathLength + depth] + beginPos;
                     level.length = iterSize[pathLength + depth];
                     traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                             t.extendLevel, cs.labeled);
+                             t.extendLevel);
                     break;
                 }
             }
@@ -794,7 +794,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
         if (depth + 1 + mappingSize == t.extendLevel && !tuples.empty()) {
             if (!level.oneLevel) buildTrie(tuples, level, length);
             traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth + 1, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                     t.extendLevel, cs.labeled);
+                     t.extendLevel);
         }
 #endif
         if (depth >= 0) {
@@ -1213,7 +1213,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
 #ifdef ALL_LEVEL
         if (traversal) enumerate(result, t, t.globalOrder, partMatch, mappingSize, traversedLevels, visited);
 #else
-        traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited, t.extendLevel, cs.labeled);
+        traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited, t.extendLevel);
 #endif
         return;
     }
@@ -1280,7 +1280,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
         level.values = candidates[pathLength];
         level.length = candCount[pathLength];
         traverse(count, query, t, t.globalOrder, partMatch, mappingSize, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                 t.extendLevel, cs.labeled);
+                 t.extendLevel);
         return;
     }
     int depth = 0;
@@ -1336,7 +1336,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
                     // when a match of shared attributes is found, traverse the remaining attributes
                     traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth + 1, lastLevels, traversedLevels,
                              traversePoses, numBranches, visited,
-                             t.extendLevel, cs.labeled);
+                             t.extendLevel);
                 }
 #endif
                 for (int i = 0; i < nIDs[mappingSize + depth].size(); ++i) {
@@ -1394,7 +1394,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
                     level.values = candidates[pathLength + depth];
                     level.length = iterSize[pathLength + depth];
                     traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                             t.extendLevel, cs.labeled);
+                             t.extendLevel);
                     break;
                 }
             }
@@ -1404,7 +1404,7 @@ void globalJoin(std::vector<std::vector<VertexID>> &result, size_t &count, const
         if (depth + 1 + mappingSize == t.extendLevel && !tuples.empty()) {
             if (!level.oneLevel) buildTrie(tuples, level, length);
             traverse(count, query, t, t.globalOrder, partMatch, mappingSize + depth + 1, lastLevels, traversedLevels, traversePoses, numBranches, visited,
-                     t.extendLevel, cs.labeled);
+                     t.extendLevel);
         }
 #endif
         if (depth >= 0) {
@@ -1520,7 +1520,7 @@ void enumerate(std::vector<std::vector<VertexID>> &result, const HyperTree &t, c
 void
 traverse(size_t &count, const Graph &query, const HyperTree &t, const std::vector<VertexID> &order, VertexID *partMatch,
          int mappingSize, const std::vector<TrieLevel *> &levels, std::vector<std::vector<TrieLevel *>> &traversedLevels,
-         std::vector<ui> &poses, std::vector<ui> &numBranches, bool *visited, int extendLevel, bool labeled) {
+         std::vector<ui> &poses, std::vector<ui> &numBranches, bool *visited, int extendLevel) {
     const std::vector<VertexID> &depthToNID = t.depthToNID;
     const std::vector<ui> &numLevels = t.levels;
     const std::vector<std::vector<VertexID>> &groups = t.groups;
@@ -1550,8 +1550,7 @@ traverse(size_t &count, const Graph &query, const HyperTree &t, const std::vecto
         for (auto &group : groups) {
             if (group.size() == 1) {
                 VertexID nID2 = group[0];
-                if (!labeled) num *= levels[nID2] -> numResults(partMatch, t.attributesToCheck, t.largerAttrs.back(), t.smallerAttrs.back());
-                else num *= levels[nID2] -> numTuples(visited);
+                num *= levels[nID2] -> numResults(partMatch, t.attributesToCheck, t.largerAttrs.back(), t.smallerAttrs.back());
             }
             else {
                 std::vector<std::vector<VertexID>> vsets(group.size());
@@ -1655,8 +1654,7 @@ traverse(size_t &count, const Graph &query, const HyperTree &t, const std::vecto
                         for (auto &group : groups) {
                             if (group.size() == 1) {
                                 VertexID nID2 = group[0];
-                                if (!labeled) num *= traversedLevels[nID2].back() -> numResults(partMatch, t.attributesToCheck, t.largerAttrs.back(), t.smallerAttrs.back());
-                                else num *= traversedLevels[nID2].back() -> numTuples(visited);
+                                num *= traversedLevels[nID2].back() -> numResults(partMatch, t.attributesToCheck, t.largerAttrs.back(), t.smallerAttrs.back());
                             }
                             else {
                                 std::vector<std::vector<VertexID>> vsets(group.size());

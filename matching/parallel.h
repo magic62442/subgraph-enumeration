@@ -11,17 +11,6 @@
 #include <vector>
 #include <map>
 
-#ifdef PROFILE_PARALLEL
-// 诊断统计
-extern long long gParRegionEnter;        // 并行区进入次数（single）
-extern long long gParThreadEnter;        // 并行区线程进入次数（所有线程总和）
-extern long long gOmpForRegions;         // omp for 区域次数
-extern long long gOmpForIters;           // omp for 总迭代数
-extern long long gSubtreeJoinCalls;      // 并行区内 subtreeSharedJoin 调用次数
-extern double gSubtreeJoinTime;          // 并行区内 subtreeSharedJoin 累计时间（秒）
-#endif
-
-
 // subtreeSharedJoin 的上下文，用于在调用前分配、调用后统一释放内部使用的临时内存
 struct alignas(64) SubtreeSharedJoinContext {
     // 按节点展平后的候选与计数

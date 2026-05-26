@@ -4,7 +4,28 @@
 
 #include "all_td.h"
 #include <unordered_set>
-#include "subset_structure.h"
+
+Permutation encodePermutation(const std::vector<uint32_t>& elements) {
+    std::bitset<165> encoded;
+    size_t length = elements.size();
+
+    for (size_t bit = 0; bit < 5; ++bit) {
+        if (length & (1 << bit)) {
+            encoded.set(bit);
+        }
+    }
+
+    for (size_t i = 0; i < length; ++i) {
+        uint32_t value = elements[i] & 0x1F;
+        size_t startBit = 5 + i * 5;
+        for (size_t bit = 0; bit < 5; ++bit) {
+            if (value & (1 << bit)) {
+                encoded.set(startBit + bit);
+            }
+        }
+    }
+    return encoded;
+}
 
 void findCliquesRecursive(const PatternGraph &graph,
                           std::vector<VertexID> &currentClique,
